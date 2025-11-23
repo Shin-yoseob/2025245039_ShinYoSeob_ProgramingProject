@@ -4,6 +4,7 @@ typedef struct {
 	int minus;			//배터리 사용 감쇠율
 	float full_time;	//현재 기기 최대 사용시간
 	float remain;		//현재 배터리 잔여량	
+
 }name;
 
 //배터리 용량을 입력받는 함수.
@@ -30,6 +31,4 @@ void search_device();
 //모든 기기의 정보를 기록한 순서대로 출력
 void printing_list();
 
-//float형 시간을 60분으로 보정하기
-void Time_revise();
 
