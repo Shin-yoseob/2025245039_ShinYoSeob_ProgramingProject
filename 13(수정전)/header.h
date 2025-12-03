@@ -7,8 +7,6 @@ typedef struct {
 	int minus;			//배터리 사용 감쇠율
 	float full_time;	//현재 기기 최대 사용시간
 	float remain;		//현재 배터리 잔여량	
-	float spend_per_one;	//1퍼센트 감소하는데 걸리는 시간
-	float spend_today;
 }name;
 
 //배터리 용량을 입력받는 함수.
@@ -24,16 +22,19 @@ float humidity_bettery(name arr[], int list_num, float pre_fulltime, int cycle);
 float microdust_bettery(name arr[], int list_num, float pre_fulltime, int cycle);
 
 //배터리의 수명을 알려주는 함수
-void BetteryLifeTime(name arr[], int list_num, int mah, int cycle);
+void BetteryLifeTime(name arr[], int list_num, float mah, int cycle);
 
 //배터리 사용시간 감쇠율을 계산하는 함수
 void minus_bettery(name arr[], int list_num, int cycle);
 
 //배터리 1퍼센트가 소모되는 시간
-void Spend_per_one(name arr[], int list_num, int mah, int cycle);
+float Spend_per_one(name arr[], int list_num, int mah, int cycle);
 
 //현재 배터리 잔여량
-void remain_Bettery(name arr[], int list_num, float spend_today);
+float remain_Bettery(name arr[], int list_num, float spend_one, float spend_today);
+
+//현재 배터리가 방전될 때까지 사용할 수 있는 시간
+void LastingTime(float remain, float spend_one);
 
 //특정기기의 정보찾아 출력
 void search_device(name arr[], char name[], int list_num);

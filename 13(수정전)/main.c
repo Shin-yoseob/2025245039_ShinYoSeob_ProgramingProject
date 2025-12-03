@@ -11,7 +11,7 @@ int main() {
 
 	while (1) {
 		int switch_num = 0;
-		int mah, cycle;
+		int i, mah, cycle;
 		char machine_name[50], search_name[20], weather[10], microdust[10], humidity[10];
 		float spend_one, spend_today, remain;
 
@@ -89,7 +89,6 @@ int main() {
 			//오늘 기기를 사용한 시간 입력
 			printf(" - (100%를 시작으로)오늘 기기 사용시간(분): ");
 			scanf("%f", &spend_today);
-			arr[list_num].spend_today = spend_today;
 
 			///////////////////////////////////////////////////////////////////////
 
@@ -104,10 +103,13 @@ int main() {
 			minus_bettery(arr, list_num, cycle);
 
 			//1퍼센트 소비되는데 걸리는 시간
-			Spend_per_one(arr,list_num, mah, cycle);
+			spend_one = Spend_per_one(arr,list_num, mah, cycle);
 
 			//100%에서 현재 남아있는 잔여 배터리 계산
-			remain_Bettery(arr, list_num, spend_today);
+			remain = remain_Bettery(arr, list_num, spend_one, spend_today);
+			
+			//현재 잔여량에서 방전까지 남은 시간
+			LastingTime(remain, spend_one);
 
 			///////////////////////////////////////////////////////////////////////
 

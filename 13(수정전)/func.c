@@ -59,13 +59,13 @@ float humidity_bettery(name arr[], int list_num, float pre_fulltime, int cycle) 
 
 
 //배터리의 수명을 계산주는 함수
-void BetteryLifeTime(name arr[], int list_num, int mah, int cycle) {
+void BetteryLifeTime(name arr[], int list_num, float mah, int cycle) {
 	float first_fulltime = 0;	
 	//초기 배터리 최대 사용가능 시간
 	float pre_fulltime = 0;											//현재 배터리 최대 사용가능 시간
 
-	first_fulltime = ((float)mah / 1000.0f) * 3.7f / 2.0f;						//소비전력 W의 평균적인 값을 2으로 설정
-	pre_fulltime = first_fulltime * (1.0f - 0.00275 * sqrt(cycle));	//감쇠계수 K는 일반적으로 0.0005 ~ 0.005이므로 그 중간으로 설정
+	first_fulltime = (mah / 1000) * 3.7f / 2;						//소비전력 W의 평균적인 값을 2으로 설정
+	pre_fulltime = first_fulltime * (1 - 0.00275 * sqrt(cycle));	//감쇠계수 K는 일반적으로 0.0005 ~ 0.005이므로 그 중간으로 설정
 
 
 	pre_fulltime = weather_bettery(arr, list_num, pre_fulltime);			//날씨 요인 적용
@@ -87,7 +87,7 @@ void minus_bettery(name arr[], int list_num, int cycle) {
 }
 
 //배터리 1퍼센트가 소모되는 시간
-void Spend_per_one(name arr[], int list_num, int mah, int cycle) {
+float Spend_per_one(name arr[], int list_num, int mah, int cycle) {
 	float Wh = (mah / 1000.0f) * 3.7f;								//배터리 단위를 미리암페어에서 와트로 전환
 	float per_one = 60.0f * ((Wh / 2.0f) / 100.0f);					//1퍼센트 감소하는데 걸리는 시간(대략적인 값들로 계산) 
 																	//2로 나눈 이유는 2W의 부하가 기기에 걸린다고 가정
@@ -97,34 +97,34 @@ void Spend_per_one(name arr[], int list_num, int mah, int cycle) {
 
 	//날씨가 더움일 때, 소모시간 11퍼센트 감소
 	if (strcmp(arr[list_num].weather, "더움") == 0) {
-		per_one *= 0.89f;
+		per_one *= 1.11f;
 	}
 	//날씨가 추움을 때, 소모시간 20퍼센트 감소
 	else if (strcmp(arr[list_num].weather, "추움") == 0) {
-		per_one *= 0.8f;
+		per_one *= 1.2f;
 	}
 
 	//미세먼지 나쁨일 때, 연간 3퍼센트의 사용시간 감소
 	if (strcmp(arr[list_num].microdust, "나쁨") == 0) {
-		per_one = per_one * pow(0.97f, (cycle / 365.0f));
+		per_one = per_one * 1.03f * (cycle / 365.0f);
 	}
 	//미세먼지 나쁨일 때, 연간 2퍼센트의 사용시간 감소
 	else if (strcmp(arr[list_num].weather, "보통") == 0) {
-		per_one = per_one * pow(0.98f, (cycle / 365.0f));
+		per_one = per_one * 1.02f * (cycle / 365.0f);
 	}
 
 	//습도가 습할 때, 배터리 부식으로 연간 사용시간 15퍼센트 감소
 	if (strcmp(arr[list_num].humidity, "습함") == 0) {
-		per_one = per_one * pow(0.85f, (cycle / 365.0f));
+		per_one = per_one * 1.15f * (cycle / 365.0f);
 	}
-	arr[list_num].spend_per_one =  per_one;
+	return per_one;
 }
 
 //현재 배터리 잔여량
-void remain_Bettery(name arr[], int list_num, float spend_today) {
+float remain_Bettery(name arr[], int list_num, float spend_one, float spend_today) {
 
 	//오늘 사용시간 / 1퍼센트 감소에 걸리는 시간 = 현재 배터리 소모량
-	float used_percent = spend_today / arr[list_num].spend_per_one;
+	float used_percent = spend_today / spend_one;
 	float remain = 100.0f - used_percent;
 
 	//잔여량이 0퍼센트보다 작거나 같으면 0으로 초기화
@@ -134,41 +134,30 @@ void remain_Bettery(name arr[], int list_num, float spend_today) {
 	
 	//값 구조체에 저장
 	arr[list_num].remain = remain;
+	
+	//값을 반환
+	return remain;
+}
+
+//현재 배터리가 방전될 때까지 사용할 수 있는 시간
+void LastingTime(float remain, float spend_one) {
+	//현재 잔여량 / 1퍼센트 소모까지 걸리는 시간 = 현재 기기 최대 사용시간
+	float pure_time = remain / spend_one;
+	int time = 0, min = 0;
 }
 
 //배터리가 100퍼센트일 때, 방전까지 사용할 수 있는 값을 60분의 단위로 변환하여 출력하는 함수
 void Time_revise(name arr[],int list_num) {
 	//실수형으로 저장된 시간을 우리가 해석하기에 편한 시간 / 분으로 변환
+	int time = arr[list_num].full_time / 1;
+	int min = 60 * (arr[list_num].full_time - time);
 
-	// 최대 사용 가능 시간(full_time)은 "시간 단위"로 저장되어 있기 때문에
-	// 먼저 전체 분 단위로 변환한다.
-	float full_time_hour = arr[list_num].full_time;   // 전체 사용 가능 시간(시간)
-	int full_minutes = (int)(full_time_hour * 60.0f); // 전체 사용 가능 시간(분)
-
-	// 오늘 사용한 시간(spend_today)은 애초에 "분" 단위라고 가정
-	int spend_today_min = (int)arr[list_num].spend_today;
-
-	// 남은 시간 계산(분 단위)
-	int remain_minutes = full_minutes - spend_today_min;
-	if (remain_minutes < 0)
-		remain_minutes = 0;
-
-	// 남은 시간을 시/분으로 변환
-	int curr_time = remain_minutes / 60;
-	int curr_min = remain_minutes % 60;
-
-	// full_time도 시/분으로 변환하여 출력
-	int full_h = full_minutes / 60;
-	int full_m = full_minutes % 60;
-
-	printf("현재 배터리 방전까지 남은 시간: 약 %d시간 %d분\n", curr_time, curr_min);
-	printf("100%%에서 최대사용할 수 있는 시간: 약 %d시간 %d분\n", full_h, full_m);
+	printf("100%에서 최대사용할 수 있는 시간: 약 %d시간 %d분\n", time, min);
 }
 
 
 //특정기기의 정보찾아 출력
 void search_device(name arr[], char name[], int list_num) {
-	int found = 0;
 	for (int i = 0; i < list_num; i++) {
 		//반복문과 strcmp함수를 통해 구조체에서 정보를 찾아 출력
 		if (strcmp(arr[i].name, name) == 0) {
@@ -179,13 +168,12 @@ void search_device(name arr[], char name[], int list_num) {
 			Time_revise(arr, i);
 			printf("==============================\n");
 			printf("\n");
-			found = 1;
 			break;
 		}
-	}
-	if (found == 0) {
-		printf("입력하신 이름의 기기가 존재하지 않거나 잘못 입력하셨습니다.\n");
-		printf("\n");
+		if (strcmp(arr[i].name, name) != 0) {
+			printf("입력하신 이름의 기기가 존재하지 않거나 잘못 입력하셨습니다.\n");
+			printf("\n");
+		}
 	}
 }
 
